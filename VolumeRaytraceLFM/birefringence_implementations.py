@@ -911,6 +911,13 @@ class BirefringentRaytraceLFM(RayTraceLFM, BirefringentElement):
             It uses pytorch's batch dimension to store each ray, and process them in parallel'''
         # Fetch the voxels traversed per ray and the lengths
         #   that each ray travels through every voxel
+        # DEBUG
+        assert not torch.any(torch.isnan(volume_in.optic_axis)), \
+            "There is a NaN value in least one optic axis vector."
+        np_optic_axis = volume_in.optic_axis.detach().numpy()
+        norms = np.linalg.norm(np_optic_axis, axis=0)
+        assert not np.any(np.isclose(norms, 0.0)), \
+            "One of the optic axis vectors has a norm of zero."
         ell_in_voxels = self.ray_vol_colli_lengths
         if all_rays_at_once:
             voxels_of_segs = self.vox_indices_ml_shifted_all
@@ -963,6 +970,8 @@ class BirefringentRaytraceLFM(RayTraceLFM, BirefringentElement):
                 material_JM = JM
             else:
                 material_JM[rays_with_voxels,...] = material_JM[rays_with_voxels,...] @ JM
+            assert not torch.any(torch.isnan(material_JM)), \
+                "There is a NaN value in least one Jones matrix."
         return material_JM
 
     def ret_and_azim_images(self, volume_in : BirefringentVolume, micro_lens_offset=[0,0]):
@@ -1129,7 +1138,7 @@ class BirefringentRaytraceLFM(RayTraceLFM, BirefringentElement):
             # Dot product of optical axis and 3 ray-direction vectors
             OA_dot_rayDir = torch.linalg.vecdot(opticAxis, rayDir)
 
-            # Azimuth is the angle of the sloq axis of retardance.
+            # Azimuth is the angle of the slow axis of retardance.
             azim = 2 * torch.arctan2(OA_dot_rayDir[1,:], OA_dot_rayDir[2,:])
             ret = abs(Delta_n) * (1 - OA_dot_rayDir[0,:] ** 2) * torch.pi * ell / wavelength
 

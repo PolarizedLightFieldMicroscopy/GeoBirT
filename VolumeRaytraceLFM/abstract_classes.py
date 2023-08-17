@@ -273,6 +273,7 @@ class RayTraceLFM(OpticalElement):
         '''
         # in case ray is not a unit vector <- does not need to be normalized
         # ray = ray / np.linalg.norm(ray)
+        # TODO: add assert statement for ray being of unit length
         theta = np.arccos(np.dot(ray, np.array([1,0,0])))
         # Unit vectors that give the laboratory axes, can be changed
         scope_axis = np.array([1,0,0])

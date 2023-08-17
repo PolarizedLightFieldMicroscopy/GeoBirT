@@ -1,0 +1,32 @@
+{
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Python:Streamlit",
+            "type": "python",
+            "request": "launch",
+            "module": "streamlit.cli",
+            "args": [
+                "run",
+                "${file}"
+            ],
+        },
+        {
+            "name": "debug streamlit",
+            "type": "python",
+            "request": "launch",
+            "program": "C://Users//Geneva//anaconda3//envs//model//lib//site-packages//streamlit",
+            "args": [
+                "run",
+                "User_Interface.py"
+            ]
+        }
+    ]
+}
