@@ -10,7 +10,9 @@ from VolumeRaytraceLFM.setup_parameters import (
     setup_iteration_parameters
     )
 from VolumeRaytraceLFM.reconstructions import ReconstructionConfig, Reconstructor
-from VolumeRaytraceLFM.visualization.plotting_volume import visualize_volume
+from VolumeRaytraceLFM.visualization.plotting_volume import (
+    visualize_volume, visualize_volume_subset_optimized
+    )
 from VolumeRaytraceLFM.utils.file_utils import create_unique_directory
 
 BACKEND = BackEnds.PYTORCH
@@ -75,7 +77,7 @@ def recon():
         visualize_volume(volume_GT, optical_info)
 
         simulator.forward_model(volume_GT)
-        # simulator.view_images()
+        simulator.view_images()
         ret_image_meas = simulator.ret_img
         azim_image_meas = simulator.azim_img
         # Save the images as numpy arrays
@@ -103,6 +105,7 @@ def recon():
     reconstructor = Reconstructor(recon_config)
     reconstructor.reconstruct(output_dir=recon_directory)
     visualize_volume(reconstructor.volume_pred, reconstructor.optical_info)
+    visualize_volume_subset_optimized(reconstructor.volume_pred, reconstructor.optical_info)
 
 def main():
     optical_info = setup_optical_parameters("config_settings\optical_config_largemla.json")

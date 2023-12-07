@@ -1180,7 +1180,7 @@ class BirefringentRaytraceLFM(RayTraceLFM, BirefringentElement):
             # Birefringence
             try:
                 if OPTIMIZING_MODE:
-                    Delta_n = volume_in.Delta_n_combined[vox]
+                    Delta_n = volume_in.birefringence[vox]
                 else:
                     Delta_n = volume_in.Delta_n[vox]
                 # And axis

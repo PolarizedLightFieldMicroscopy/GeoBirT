@@ -27,7 +27,7 @@ from VolumeRaytraceLFM.utils.dimensions_utils import (
     )
 
 COMBINING_DELTA_N = True
-DEBUG = False
+DEBUG = True
 
 class ReconstructionConfig:
     def __init__(self, optical_info, ret_image, azim_image, initial_vol, iteration_params, loss_fcn=None, gt_vol=None):
@@ -342,7 +342,8 @@ class Reconstructor:
             # The in-place operation causes problems with the gradient tracking
             # with torch.no_grad():  # Temporarily disable gradient tracking
             #   volume_estimation.Delta_n[:] = Delta_n_combined  # Update the value in-place
-            volume_estimation.Delta_n_combined = Delta_n_combined
+            Delta_n_combined.retain_grad()
+            volume_estimation.birefringence = Delta_n_combined
         # Apply forward model
         [ret_image_current, azim_image_current] = self.rays.ray_trace_through_volume(volume_estimation)
         loss, data_term, regularization_term = self._compute_loss(ret_image_current, azim_image_current)
@@ -384,7 +385,7 @@ class Reconstructor:
         if ep % 1 == 0:
             # plt.clf()
             if COMBINING_DELTA_N:
-                Delta_n = volume_estimation.Delta_n_combined.view(self.optical_info['volume_shape']).detach().unsqueeze(0)
+                Delta_n = volume_estimation.birefringence.view(self.optical_info['volume_shape']).detach().unsqueeze(0)
             else:
                 Delta_n = volume_estimation.get_delta_n().detach().unsqueeze(0)
             mip_image = convert_volume_to_2d_mip(Delta_n)
@@ -421,15 +422,16 @@ class Reconstructor:
         half_length = length // 2
 
         # Split Delta_n into two parts
-        # volume.Delta_n_first_half = torch.nn.Parameter(Delta_n[:half_length].clone())
-        # volume.Delta_n_second_half = torch.nn.Parameter(Delta_n[half_length:].clone(), requires_grad=False)
+        # volume.Delta_n_first_part = torch.nn.Parameter(Delta_n[:half_length].clone())
+        # volume.Delta_n_second_part = torch.nn.Parameter(Delta_n[half_length:].clone(), requires_grad=False)
 
         Delta_n_reshaped = Delta_n.clone().view(3, 7, 7)
         
         # Extract the middle row of each plane
         # The middle row index in each 7x7 plane is 3
-        Delta_n_first_part = Delta_n_reshaped[:, 3, :]  # Shape: (3, 7)
-        volume.Delta_n_first_part = torch.nn.Parameter(Delta_n_first_part.flatten())
+        Delta_n_first_part = Delta_n_reshaped[:, 3, :] # Shape: (3, 7)
+        volume.Delta_n_first_part = torch.nn.Parameter(Delta_n_first_part.flatten(), requires_grad=True)
+        volume.Delta_n_first_part.retain_grad()
 
         # Concatenate slices before and after the middle row for each plane
         Delta_n_second_part = torch.cat([Delta_n_reshaped[:, :3, :],  # Rows before the middle
@@ -455,7 +457,7 @@ class Reconstructor:
         # self.restrict_volume_to_reachable_region()
         if COMBINING_DELTA_N:
             self.modify_volume()
-            param_list = ['Delta_n_first_part', 'optic_axis'] # 'Delta_n_second_part'
+            param_list = ['Delta_n_first_part', 'Delta_n_second_part'] # 'optic_axis'
         else:
             param_list = ['Delta_n', 'optic_axis']
         self.specify_variables_to_learn(param_list)

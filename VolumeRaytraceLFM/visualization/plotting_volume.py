@@ -56,6 +56,19 @@ def visualize_volume(volume: BirefringentVolume, optical_info: dict):
         plotly_figure.show()
     return
 
+def visualize_volume_subset_optimized(volume: BirefringentVolume, optical_info: dict):
+    """Plot the volume using the attribute 'birefringence' instead of 'delta_n'"""
+    with torch.no_grad():
+        plotly_figure = volume.plot_lines_plotly()
+        birefringence = volume.birefringence.view(optical_info['volume_shape'])
+        plotly_figure = volume.plot_volume_plotly(optical_info,
+                                                voxels_in=birefringence,
+                                                opacity=0.01,
+                                                fig=plotly_figure
+                                                )
+        plotly_figure.show()
+    return
+
 def convert_volume_to_2d_mip(
     volume_input, 
     projection_func=torch.sum, 
